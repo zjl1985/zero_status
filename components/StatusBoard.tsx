@@ -183,7 +183,7 @@ export default function StatusBoard({ initial }: { initial: StatusResponse }) {
           实际可用性请以官方页面为准。
         </p>
         <p className="mt-1">
-          OpenAI · Anthropic · Google Gemini · Perplexity · DeepSeek ·{" "}
+          OpenAI · Anthropic · Google Gemini · xAI · Perplexity · DeepSeek ·{" "}
           <a
             href="/api/status"
             className="underline decoration-neutral-700 underline-offset-2 hover:text-neutral-300"

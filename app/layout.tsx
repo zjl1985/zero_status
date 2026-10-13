@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "LLM Status · 大模型状态监控",
   description:
-    "实时监控 OpenAI、Anthropic、Google Gemini、Perplexity、DeepSeek 等大模型服务的官方状态",
+    "实时监控 OpenAI、Anthropic、Google Gemini、xAI、Perplexity、DeepSeek 等大模型服务的官方状态",
 };
 
 export default function RootLayout({

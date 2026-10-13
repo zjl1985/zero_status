@@ -9,7 +9,8 @@
 | OpenAI | status.openai.com (Statuspage API) | 实时 indicator |
 | Anthropic | status.anthropic.com (Statuspage API) | 实时 indicator |
 | Google Gemini / Vertex AI | status.cloud.google.com Atom 事件流 | 按最近事件启发式推断 |
-| Perplexity | status.perplexity.ai (Statuspage API) | 实时 indicator |
+| Perplexity | status.perplexity.com (Statuspage API) | 实时 indicator；.ai 旧域名已 301 至此 |
+| xAI (Grok) | status.x.ai/feed.xml (官方 RSS) | HTML 页面有 Cloudflare 防护，用 feed 推断 |
 | DeepSeek | status.deepseek.com | FlashCat 自建页，解析 HTML 内嵌 RSC 数据 |
 
 ## 架构

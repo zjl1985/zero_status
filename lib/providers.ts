@@ -346,6 +346,88 @@ async function fetchDeepseek(): Promise<{
 }
 
 // ---------------------------------------------------------------------------
+// xAI 适配器：status.x.ai 的 HTML 页面有 Cloudflare 防护，但官方文档提供的
+// RSS feed（status.x.ai/feed.xml）不设防。feed 只含事件历史，当前状态按
+// "是否存在未解决事件"启发式推断。
+// ---------------------------------------------------------------------------
+
+const XAI_SEVERITY_MAP: Record<string, StatusLevel> = {
+  outage: "major_outage",
+  disruption: "partial_outage",
+  degradation: "degraded",
+  maintenance: "maintenance",
+};
+
+interface XaiItem {
+  title: string;
+  link?: string;
+  pubDate: string;
+  categories: string[];
+  status?: string; // description 中的 Status: X
+  severity?: string;
+}
+
+function parseRssItems(xml: string): XaiItem[] {
+  const items: XaiItem[] = [];
+  const itemRe = /<item>([\s\S]*?)<\/item>/g;
+  let m: RegExpExecArray | null;
+  while ((m = itemRe.exec(xml)) !== null) {
+    const block = m[1];
+    const cdata = (s: string) => s.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "");
+    const title = stripTags(cdata(block.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? ""));
+    const link = block.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim();
+    const pubDate = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]?.trim() ?? "";
+    const categories = [...block.matchAll(/<category>([\s\S]*?)<\/category>/g)].map((c) =>
+      stripTags(cdata(c[1])).toLowerCase(),
+    );
+    const descHtml = cdata(block.match(/<description>([\s\S]*?)<\/description>/)?.[1] ?? "");
+    const status = stripTags(descHtml.match(/<h3>Status:\s*([^<]+)<\/h3>/i)?.[1] ?? "")
+      .toLowerCase();
+    const severity = stripTags(descHtml.match(/Severity:\s*([a-z]+)/i)?.[1] ?? "")
+      .toLowerCase();
+    if (title) items.push({ title, link, pubDate, categories, status, severity });
+  }
+  return items;
+}
+
+async function fetchXai(): Promise<{
+  level: StatusLevel;
+  headline: string;
+  components: ComponentStatus[];
+  incidents: Incident[];
+}> {
+  const xml = await fetchText("https://status.x.ai/feed.xml");
+  const items = parseRssItems(xml);
+
+  const isResolved = (i: XaiItem) =>
+    i.status === "resolved" || i.categories.includes("resolved");
+
+  const active = items.filter((i) => !isResolved(i));
+  let level: StatusLevel = "operational";
+  for (const i of active) {
+    const mapped = XAI_SEVERITY_MAP[i.severity ?? ""] ?? "degraded";
+    if (rank(mapped) < rank(level)) level = mapped;
+  }
+
+  const headline =
+    active.length === 0
+      ? "所有系统运行正常"
+      : `${active.length} 起事件处理中`;
+
+  const incidents: Incident[] = items.slice(0, 5).map((i) => ({
+    name: i.title,
+    status: isResolved(i) ? "resolved" : i.status || "monitoring",
+    createdAt: new Date(Date.parse(i.pubDate) || Date.now()).toISOString(),
+    updatedAt: new Date(Date.parse(i.pubDate) || Date.now()).toISOString(),
+    url: i.link,
+  }));
+
+  const components: ComponentStatus[] = [];
+
+  return { level, headline, components, incidents };
+}
+
+// ---------------------------------------------------------------------------
 // 厂商注册表
 // ---------------------------------------------------------------------------
 
@@ -387,6 +469,14 @@ export const PROVIDERS: ProviderDef[] = [
     statusPage: "https://status.cloud.google.com",
     source: "Google Cloud 事件流（推断）",
     fetch: fetchGoogle,
+  },
+  {
+    id: "xai",
+    name: "xAI (Grok)",
+    homepage: "https://x.ai",
+    statusPage: "https://status.x.ai",
+    source: "官方状态页 RSS（推断）",
+    fetch: fetchXai,
   },
   {
     id: "perplexity",
