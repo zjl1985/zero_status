@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StatusLevel, StatusResponse } from "@/lib/types";
 import ProviderCard from "./ProviderCard";
-import { RefreshCw, Search, X } from "lucide-react";
+import { RefreshCw, Search, X, Radio } from "lucide-react";
 
 export const LEVEL_META: Record<
   StatusLevel,
@@ -156,14 +156,23 @@ export default function StatusBoard({ initial }: { initial: StatusResponse }) {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       {/* 顶部标题与控制 */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between border-b border-zinc-200/80 pb-6">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">
-            LLM Status
-          </h1>
-          <p className="mt-1 text-xs text-zinc-500">
-            全球主流大模型官方服务状态聚合监控
-          </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200/80 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-50/70 shadow-xs">
+            <Radio className="h-5 w-5 text-emerald-600" />
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            </span>
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">
+              LLM Status
+            </h1>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              全球主流大模型官方服务状态聚合监控
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-zinc-500">
