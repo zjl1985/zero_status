@@ -6,7 +6,11 @@ interface ProviderIconProps {
   size?: number;
 }
 
-export default function ProviderIcon({ id, className = "h-6 w-6", size = 24 }: ProviderIconProps) {
+export default function ProviderIcon({
+  id,
+  className = "h-5 w-5",
+  size = 20,
+}: ProviderIconProps) {
   switch (id) {
     case "openai":
       return (
@@ -42,20 +46,11 @@ export default function ProviderIcon({ id, className = "h-6 w-6", size = 24 }: P
           viewBox="0 0 24 24"
           width={size}
           height={size}
+          fill="currentColor"
           className={className}
           aria-label="Google Gemini"
         >
-          <defs>
-            <linearGradient id="gemini-icon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="50%" stopColor="#818cf8" />
-              <stop offset="100%" stopColor="#f472b6" />
-            </linearGradient>
-          </defs>
-          <path
-            fill="url(#gemini-icon-grad)"
-            d="M11.04 1.83C11.37.95 12.63.95 12.96 1.83l2.25 5.98a8.2 8.2 0 0 0 4.98 4.98l5.98 2.25c.88.33.88 1.59 0 1.92l-5.98 2.25a8.2 8.2 0 0 0-4.98 4.98l-2.25 5.98c-.33.88-1.59.88-1.92 0l-2.25-5.98a8.2 8.2 0 0 0-4.98-4.98l-5.98-2.25c-.88-.33-.88-1.59 0-1.92l5.98-2.25a8.2 8.2 0 0 0 4.98-4.98l2.25-5.98z"
-          />
+          <path d="M11.04 1.83C11.37.95 12.63.95 12.96 1.83l2.25 5.98a8.2 8.2 0 0 0 4.98 4.98l5.98 2.25c.88.33.88 1.59 0 1.92l-5.98 2.25a8.2 8.2 0 0 0-4.98 4.98l-2.25 5.98c-.33.88-1.59.88-1.92 0l-2.25-5.98a8.2 8.2 0 0 0-4.98-4.98l-5.98-2.25c-.88-.33-.88-1.59 0-1.92l5.98-2.25a8.2 8.2 0 0 0 4.98-4.98l2.25-5.98z" />
         </svg>
       );
 
@@ -120,64 +115,5 @@ export default function ProviderIcon({ id, className = "h-6 w-6", size = 24 }: P
           <line x1="6" y1="18" x2="6.01" y2="18" />
         </svg>
       );
-  }
-}
-
-export function getProviderBadgeStyle(id: string): {
-  bg: string;
-  text: string;
-  border: string;
-  glow: string;
-} {
-  switch (id) {
-    case "openai":
-      return {
-        bg: "bg-emerald-500/10",
-        text: "text-emerald-400",
-        border: "border-emerald-500/20 group-hover:border-emerald-500/40",
-        glow: "hover:shadow-emerald-500/10",
-      };
-    case "anthropic":
-      return {
-        bg: "bg-amber-500/10",
-        text: "text-amber-400",
-        border: "border-amber-500/20 group-hover:border-amber-500/40",
-        glow: "hover:shadow-amber-500/10",
-      };
-    case "google-gemini":
-      return {
-        bg: "bg-indigo-500/10",
-        text: "text-indigo-400",
-        border: "border-indigo-500/20 group-hover:border-indigo-500/40",
-        glow: "hover:shadow-indigo-500/10",
-      };
-    case "xai":
-      return {
-        bg: "bg-neutral-500/10",
-        text: "text-neutral-200",
-        border: "border-neutral-500/20 group-hover:border-neutral-500/40",
-        glow: "hover:shadow-neutral-500/10",
-      };
-    case "perplexity":
-      return {
-        bg: "bg-teal-500/10",
-        text: "text-teal-400",
-        border: "border-teal-500/20 group-hover:border-teal-500/40",
-        glow: "hover:shadow-teal-500/10",
-      };
-    case "deepseek":
-      return {
-        bg: "bg-blue-500/10",
-        text: "text-blue-400",
-        border: "border-blue-500/20 group-hover:border-blue-500/40",
-        glow: "hover:shadow-blue-500/10",
-      };
-    default:
-      return {
-        bg: "bg-neutral-500/10",
-        text: "text-neutral-400",
-        border: "border-neutral-500/20 group-hover:border-neutral-500/40",
-        glow: "hover:shadow-neutral-500/10",
-      };
   }
 }

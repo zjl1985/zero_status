@@ -3,19 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StatusLevel, StatusResponse } from "@/lib/types";
 import ProviderCard from "./ProviderCard";
-import {
-  RefreshCw,
-  Search,
-  CheckCircle2,
-  AlertTriangle,
-  Server,
-  Activity,
-  Layers,
-  Code2,
-  Clock,
-  Radio,
-  X,
-} from "lucide-react";
+import { RefreshCw, Search, X } from "lucide-react";
 
 export const LEVEL_META: Record<
   StatusLevel,
@@ -23,45 +11,45 @@ export const LEVEL_META: Record<
 > = {
   operational: {
     label: "运行正常",
-    dot: "bg-emerald-400",
-    text: "text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/25",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700",
+    bg: "bg-emerald-50/80",
+    border: "border-emerald-200/80",
   },
   degraded: {
     label: "性能下降",
-    dot: "bg-amber-400",
-    text: "text-amber-400",
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/25",
+    dot: "bg-amber-500",
+    text: "text-amber-800",
+    bg: "bg-amber-50/80",
+    border: "border-amber-200/80",
   },
   partial_outage: {
     label: "部分故障",
-    dot: "bg-orange-400",
-    text: "text-orange-400",
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/25",
+    dot: "bg-orange-500",
+    text: "text-orange-800",
+    bg: "bg-orange-50/80",
+    border: "border-orange-200/80",
   },
   major_outage: {
     label: "严重故障",
-    dot: "bg-red-400",
-    text: "text-red-400",
-    bg: "bg-red-500/10",
-    border: "border-red-500/25",
+    dot: "bg-rose-500",
+    text: "text-rose-800",
+    bg: "bg-rose-50/80",
+    border: "border-rose-200/80",
   },
   maintenance: {
     label: "维护中",
-    dot: "bg-sky-400",
-    text: "text-sky-400",
-    bg: "bg-sky-500/10",
-    border: "border-sky-500/25",
+    dot: "bg-sky-500",
+    text: "text-sky-800",
+    bg: "bg-sky-50/80",
+    border: "border-sky-200/80",
   },
   unknown: {
     label: "无法获取",
-    dot: "bg-neutral-500",
-    text: "text-neutral-400",
-    bg: "bg-neutral-500/10",
-    border: "border-neutral-500/25",
+    dot: "bg-zinc-400",
+    text: "text-zinc-600",
+    bg: "bg-zinc-100",
+    border: "border-zinc-200",
   },
 };
 
@@ -97,9 +85,7 @@ function TimeAgo({ iso }: { iso: string }) {
         ? `${s} 秒前`
         : s < 3600
           ? `${Math.floor(s / 60)} 分钟前`
-          : s < 86400
-            ? `${Math.floor(s / 3600)} 小时前`
-            : `${Math.floor(s / 86400)} 天前`;
+          : `${Math.floor(s / 86400)} 天前`;
 
   return <span suppressHydrationWarning>{text}</span>;
 }
@@ -108,7 +94,6 @@ export default function StatusBoard({ initial }: { initial: StatusResponse }) {
   const [data, setData] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [auto, setAuto] = useState(true);
-  const [countdown, setCountdown] = useState(60);
   const [query, setQuery] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
 
@@ -123,28 +108,15 @@ export default function StatusBoard({ initial }: { initial: StatusResponse }) {
       // 保留旧数据
     } finally {
       setLoading(false);
-      setCountdown(60);
     }
   }, []);
 
-  // 倒计时与定时轮询
   useEffect(() => {
     if (!auto) return;
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          refresh();
-          return 60;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
+    const timer = setInterval(refresh, 60_000);
     return () => clearInterval(timer);
   }, [auto, refresh]);
 
-  // 统计指标
   const totalProviders = data.providers.length;
   const operationalCount = data.providers.filter(
     (p) => p.level === "operational",
@@ -152,347 +124,194 @@ export default function StatusBoard({ initial }: { initial: StatusResponse }) {
   const issueCount = data.providers.filter(
     (p) => p.level !== "operational" && p.level !== "unknown",
   ).length;
-  const unknownCount = data.providers.filter((p) => p.level === "unknown").length;
-  const totalComponents = data.providers.reduce(
-    (acc, p) => acc + p.components.length,
-    0,
-  );
 
-  const healthScore = totalProviders > 0
-    ? Math.round((operationalCount / totalProviders) * 100)
-    : 100;
+  const abnormalProviders = data.providers.filter(
+    (p) => p.level !== "operational" && p.level !== "unknown",
+  );
 
   const worst = data.providers
     .map((p) => p.level)
     .sort((a, b) => SEVERITY.indexOf(a) - SEVERITY.indexOf(b))[0] || "operational";
 
-  const allOk = issueCount === 0 && unknownCount === 0;
+  const allOk = issueCount === 0;
   const worstMeta = LEVEL_META[worst];
 
   // 过滤逻辑
   const filteredProviders = useMemo(() => {
     return data.providers.filter((p) => {
-      // 标签过滤
       if (filterTab === "issues" && p.level === "operational") return false;
       if (filterTab === "operational" && p.level !== "operational") return false;
 
-      // 搜索过滤
       if (!query.trim()) return true;
       const q = query.toLowerCase().trim();
-      const matchName = p.name.toLowerCase().includes(q);
-      const matchHeadline = p.headline.toLowerCase().includes(q);
-      const matchComponent = p.components.some((c) =>
-        c.name.toLowerCase().includes(q),
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.headline.toLowerCase().includes(q) ||
+        p.components.some((c) => c.name.toLowerCase().includes(q)) ||
+        p.incidents.some((i) => i.name.toLowerCase().includes(q))
       );
-      const matchIncident = p.incidents.some((i) =>
-        i.name.toLowerCase().includes(q),
-      );
-
-      return matchName || matchHeadline || matchComponent || matchIncident;
     });
   }, [data.providers, filterTab, query]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:py-12">
-      {/* 顶部主导航栏 */}
-      <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-800/80 pb-6">
-        <div className="flex items-center gap-3.5">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 shadow-lg shadow-emerald-500/10">
-            <Radio className="h-5 w-5 text-emerald-400" />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-            </span>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                LLM Status
-              </h1>
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-emerald-400">
-                LIVE
-              </span>
-            </div>
-            <p className="text-xs text-neutral-400 sm:text-sm mt-0.5">
-              全球主流大模型服务实时运行状态监控
-            </p>
-          </div>
+    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+      {/* 顶部标题与控制 */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-baseline sm:justify-between border-b border-zinc-200/80 pb-6">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">
+            LLM Status
+          </h1>
+          <p className="mt-1 text-xs text-zinc-500">
+            全球主流大模型官方服务状态聚合监控
+          </p>
         </div>
 
-        {/* 右侧控制条 */}
-        <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
-          {/* 更新倒计时 */}
-          <div className="flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-neutral-400">
-            <Clock className="h-3.5 w-3.5 text-neutral-500" />
-            <span>
-              已更新：<TimeAgo iso={data.generatedAt} />
-            </span>
-            {auto && (
-              <span className="text-[11px] text-neutral-500 font-mono">
-                ({countdown}s)
-              </span>
-            )}
-          </div>
-
-          {/* 自动刷新开关 */}
-          <button
-            onClick={() => setAuto(!auto)}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2 font-medium transition ${
-              auto
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                : "border-neutral-800 bg-neutral-900/40 text-neutral-400 hover:text-white"
-            }`}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                auto ? "bg-emerald-400 animate-pulse" : "bg-neutral-600"
-              }`}
+        <div className="flex items-center gap-3 text-xs text-zinc-500">
+          <span>
+            更新于 <TimeAgo iso={data.generatedAt} />
+          </span>
+          <span className="text-zinc-300">·</span>
+          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={auto}
+              onChange={(e) => setAuto(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-800 accent-zinc-800 focus:ring-0"
             />
-            <span>{auto ? "自动同步" : "已暂停"}</span>
-          </button>
-
-          {/* 手动刷新按钮 */}
+            <span>自动刷新 (60s)</span>
+          </label>
           <button
             onClick={refresh}
             disabled={loading}
-            className="flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-800/80 px-3.5 py-2 font-medium text-white shadow-sm transition hover:border-neutral-600 hover:bg-neutral-750 disabled:opacity-50 active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-950 disabled:opacity-50"
           >
             <RefreshCw
-              className={`h-3.5 w-3.5 ${loading ? "animate-spin text-emerald-400" : ""}`}
+              className={`h-3 w-3 ${loading ? "animate-spin text-zinc-800" : ""}`}
             />
-            <span>{loading ? "同步中…" : "刷新"}</span>
+            <span>{loading ? "更新中" : "刷新"}</span>
           </button>
         </div>
       </header>
 
-      {/* KPI 关键指标卡片群 */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {/* 指标 1：服务总览 */}
-        <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium">监控厂商</span>
-            <Layers className="h-4 w-4 text-neutral-500" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-white font-mono">
-              {totalProviders}
-            </span>
-            <span className="text-xs text-neutral-500">家服务商</span>
-          </div>
-          <p className="mt-1 text-[11px] text-neutral-500 truncate">
-            OpenAI, Anthropic, Gemini, xAI...
-          </p>
-        </div>
-
-        {/* 指标 2：健康指数 */}
-        <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium">服务正常率</span>
-            <Activity className="h-4 w-4 text-emerald-400" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span
-              className={`text-2xl font-bold tracking-tight font-mono ${
-                healthScore >= 90 ? "text-emerald-400" : "text-amber-400"
-              }`}
-            >
-              {healthScore}%
-            </span>
-            <span className="text-xs text-neutral-500">
-              {operationalCount}/{totalProviders} 正常
-            </span>
-          </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-            <div
-              className={`h-full transition-all duration-500 ${
-                healthScore >= 90 ? "bg-emerald-400" : "bg-amber-400"
-              }`}
-              style={{ width: `${healthScore}%` }}
-            />
-          </div>
-        </div>
-
-        {/* 指标 3：异常与故障 */}
-        <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium">异常关注</span>
-            <AlertTriangle
-              className={`h-4 w-4 ${issueCount > 0 ? "text-amber-400" : "text-neutral-500"}`}
-            />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span
-              className={`text-2xl font-bold tracking-tight font-mono ${
-                issueCount > 0 ? "text-amber-400" : "text-emerald-400"
-              }`}
-            >
-              {issueCount}
-            </span>
-            <span className="text-xs text-neutral-500">个存在异常</span>
-          </div>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            {issueCount === 0 ? "全网无服务性能下降" : "部分厂商出现部分降级"}
-          </p>
-        </div>
-
-        {/* 指标 4：组件覆盖 */}
-        <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/50 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-between text-neutral-400">
-            <span className="text-xs font-medium">监控组件</span>
-            <Server className="h-4 w-4 text-sky-400" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-white font-mono">
-              {totalComponents}
-            </span>
-            <span className="text-xs text-neutral-500">细分子项</span>
-          </div>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            涵盖 API、UI、语音与微调等
-          </p>
-        </div>
-      </div>
-
-      {/* 全局大横幅 Banner */}
+      {/* Hero 状态总览横幅（参考 Stripe / Apple 极简风格） */}
       <div
-        className={`mb-8 rounded-2xl border p-4 sm:p-5 backdrop-blur-md transition ${worstMeta.bg} ${worstMeta.border}`}
+        className={`mt-6 flex items-center justify-between rounded-xl border p-4 transition ${worstMeta.bg} ${worstMeta.border}`}
       >
-        <div className="flex items-start sm:items-center gap-3.5">
-          <div
-            className={`mt-0.5 sm:mt-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-              allOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
-            }`}
-          >
-            {allOk ? (
-              <CheckCircle2 className="h-5 w-5" />
-            ) : (
-              <AlertTriangle className="h-5 w-5" />
+        <div className="flex items-center gap-3">
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${worstMeta.dot}`} />
+          <div>
+            <p className={`text-sm font-medium ${worstMeta.text}`}>
+              {allOk
+                ? "所有监控服务目前运行正常"
+                : `${issueCount} 个服务存在性能下降或异常`}
+            </p>
+            {!allOk && (
+              <p className="mt-0.5 text-xs text-zinc-600">
+                涉及厂商：{abnormalProviders.map((p) => p.name).join("、")}
+              </p>
             )}
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold text-sm sm:text-base ${worstMeta.text}`}>
-              {allOk
-                ? "所有监控的主流大模型核心服务均运行正常"
-                : `检测到 ${issueCount} 个厂商存在异常或性能下降，其余服务正常运行`}
-            </h3>
-            <p className="mt-0.5 text-xs text-neutral-400 leading-relaxed">
-              {allOk
-                ? "各服务商官方系统状态良好，API 响应及客户端交互均无异常通报。"
-                : "请参考下方对应厂商卡片的具体影响组件及官方事故处理公告。"}
-            </p>
-          </div>
         </div>
+
+        <span className="text-xs text-zinc-500 font-mono hidden sm:inline">
+          {operationalCount}/{totalProviders} 正常
+        </span>
       </div>
 
-      {/* 搜索与过滤工具栏 */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* 状态过滤选项卡 */}
-        <div className="flex items-center gap-1.5 rounded-xl border border-neutral-800/80 bg-neutral-900/60 p-1 backdrop-blur-sm">
+      {/* 工具栏：分段控件 + 搜索框 */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* 分段过滤控件 */}
+        <div className="inline-flex rounded-lg border border-zinc-200/80 bg-zinc-100/70 p-0.5 text-xs">
           <button
             onClick={() => setFilterTab("all")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-md px-3 py-1 font-medium transition ${
               filterTab === "all"
-                ? "bg-neutral-800 text-white shadow-sm"
-                : "text-neutral-400 hover:text-white"
+                ? "bg-white text-zinc-950 shadow-sm"
+                : "text-zinc-600 hover:text-zinc-950"
             }`}
           >
             全部 ({totalProviders})
           </button>
           <button
             onClick={() => setFilterTab("issues")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-md px-3 py-1 font-medium transition ${
               filterTab === "issues"
-                ? "bg-amber-500/20 text-amber-300 shadow-sm"
-                : "text-neutral-400 hover:text-white"
+                ? "bg-white text-zinc-950 shadow-sm"
+                : "text-zinc-600 hover:text-zinc-950"
             }`}
           >
-            存在异常 ({issueCount})
+            异常 ({issueCount})
           </button>
           <button
             onClick={() => setFilterTab("operational")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            className={`rounded-md px-3 py-1 font-medium transition ${
               filterTab === "operational"
-                ? "bg-emerald-500/20 text-emerald-400 shadow-sm"
-                : "text-neutral-400 hover:text-white"
+                ? "bg-white text-zinc-950 shadow-sm"
+                : "text-zinc-600 hover:text-zinc-950"
             }`}
           >
-            运行正常 ({operationalCount})
+            正常 ({operationalCount})
           </button>
         </div>
 
-        {/* 实时搜索框 */}
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-500" />
+        {/* 搜索框 */}
+        <div className="relative w-full sm:w-64">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜索厂商或组件 (如 GPT, Claude)..."
-            className="w-full rounded-xl border border-neutral-800 bg-neutral-900/60 py-1.5 pl-9 pr-8 text-xs text-neutral-200 placeholder-neutral-500 transition focus:border-emerald-500/50 focus:bg-neutral-900 focus:outline-none"
+            placeholder="按厂商或组件筛选..."
+            className="w-full rounded-lg border border-zinc-200 bg-white py-1.5 pl-8 pr-7 text-xs text-zinc-900 placeholder-zinc-400 shadow-sm transition focus:border-zinc-400 focus:outline-none"
           />
           {query && (
             <button
               onClick={() => setQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3 w-3" />
             </button>
           )}
         </div>
       </div>
 
-      {/* 厂商卡片网格列表 */}
+      {/* 厂商列表网格 */}
       {filteredProviders.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filteredProviders.map((p) => (
             <ProviderCard key={p.id} provider={p} />
           ))}
         </div>
       ) : (
-        <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/40 py-16 text-center">
-          <Server className="mx-auto h-10 w-10 text-neutral-600 mb-3" />
-          <p className="text-sm font-medium text-neutral-300">
-            未找到符合条件的厂商或组件
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">
-            尝试更换搜索关键词或清除过滤条件
-          </p>
+        <div className="mt-8 rounded-xl border border-dashed border-zinc-200 bg-white py-12 text-center">
+          <p className="text-sm font-medium text-zinc-700">未找到匹配的服务</p>
+          <p className="mt-1 text-xs text-zinc-400">请尝试清除搜索或筛选条件</p>
           <button
             onClick={() => {
               setQuery("");
               setFilterTab("all");
             }}
-            className="mt-4 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-xs text-neutral-300 hover:text-white transition"
+            className="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50"
           >
             重置筛选
           </button>
         </div>
       )}
 
-      {/* 页脚与说明 */}
-      <footer className="mt-12 border-t border-neutral-800/80 pt-8 text-xs leading-relaxed text-neutral-500">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-neutral-400 font-medium">
-              数据来源于各 AI 厂商官方状态页，系统每 60 秒自动并行同步。
-            </p>
-            <p className="text-[11px] text-neutral-500">
-              包含 OpenAI · Anthropic · Google Gemini · xAI · Perplexity · DeepSeek · 官方服务可用性以厂商公布为准。
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <a
-              href="/api/status"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-neutral-400 hover:border-neutral-700 hover:text-emerald-400 transition font-mono text-[11px]"
-            >
-              <Code2 className="h-3 w-3" />
-              <span>GET /api/status</span>
-            </a>
-          </div>
+      {/* 页脚说明 */}
+      <footer className="mt-12 border-t border-zinc-200/80 pt-6 text-xs text-zinc-500">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <p>
+            数据聚合自 OpenAI · Anthropic · Google Cloud · xAI · Perplexity · DeepSeek 官方状态页。
+          </p>
+          <a
+            href="/api/status"
+            target="_blank"
+            rel="noreferrer"
+            className="text-zinc-500 hover:text-zinc-900 underline underline-offset-2 transition"
+          >
+            API 接口 (/api/status)
+          </a>
         </div>
       </footer>
     </div>
