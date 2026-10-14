@@ -7,9 +7,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "LLM Status · 全球大模型服务状态监控",
+  title: "LLM Status · 全球大模型服务状态监控 | Real-Time AI Status",
   description:
-    "实时聚合监控 OpenAI、Anthropic Claude、Google Gemini、xAI Grok、Perplexity、DeepSeek 等大模型官方服务状态。",
+    "实时聚合监控 OpenAI、Anthropic Claude、Google Gemini、xAI Grok、Perplexity、DeepSeek 等大模型官方服务状态。Real-time status monitoring for major LLM & AI services worldwide.",
   keywords: [
     "LLM Status",
     "OpenAI status",
@@ -18,11 +18,13 @@ export const metadata: Metadata = {
     "DeepSeek status",
     "大模型状态",
     "服务状态监控",
+    "AI status monitor",
   ],
   authors: [{ name: "Zero Status" }],
   openGraph: {
-    title: "LLM Status · 全球大模型服务状态监控",
-    description: "实时聚合监控 OpenAI、Anthropic、Google Gemini、xAI、Perplexity、DeepSeek 官方状态",
+    title: "LLM Status · 全球大模型服务状态监控 | Real-Time AI Status",
+    description:
+      "实时聚合监控 OpenAI、Anthropic、Google Gemini、xAI、Perplexity、DeepSeek 官方状态",
     type: "website",
   },
 };

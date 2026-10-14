@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import type { Incident, ProviderStatus, StatusLevel } from "@/lib/types";
-import { LEVEL_META } from "./StatusBoard";
+import {
+  formatIncidentDate,
+  getLevelMeta,
+  INCIDENT_STATUS_MAP,
+  translateHeadline,
+  translateSource,
+  useI18n,
+} from "@/lib/i18n";
 import ProviderIcon from "./ProviderIcon";
 import {
   ExternalLink,
@@ -11,18 +18,6 @@ import {
   AlertCircle,
   Check,
 } from "lucide-react";
-
-const INCIDENT_STATUS: Record<string, { label: string; cls: string }> = {
-  investigating: { label: "调查中", cls: "bg-amber-50 text-amber-800 border-amber-200" },
-  identified: { label: "已定位", cls: "bg-orange-50 text-orange-800 border-orange-200" },
-  monitoring: { label: "监控中", cls: "bg-sky-50 text-sky-800 border-sky-200" },
-  resolved: { label: "已恢复", cls: "bg-zinc-100 text-zinc-600 border-zinc-200" },
-  scheduled: { label: "已排期", cls: "bg-zinc-100 text-zinc-600 border-zinc-200" },
-  in_progress: { label: "进行中", cls: "bg-amber-50 text-amber-800 border-amber-200" },
-  verifying: { label: "验证中", cls: "bg-indigo-50 text-indigo-800 border-indigo-200" },
-  completed: { label: "已完成", cls: "bg-zinc-100 text-zinc-600 border-zinc-200" },
-  postmortem: { label: "复盘", cls: "bg-purple-50 text-purple-800 border-purple-200" },
-};
 
 const DEFAULT_VISIBLE_COMPONENTS = 8;
 
@@ -35,7 +30,8 @@ function ComponentChip({
   level: StatusLevel;
   uptime?: number;
 }) {
-  const meta = LEVEL_META[level];
+  const { locale, t } = useI18n();
+  const meta = getLevelMeta(level, locale);
   const isOk = level === "operational";
 
   return (
@@ -45,7 +41,7 @@ function ComponentChip({
           ? "border-zinc-200/70 bg-zinc-50/70 text-zinc-700"
           : `${meta.bg} ${meta.border} ${meta.text} font-medium`
       }`}
-      title={`${meta.label}${uptime !== undefined ? ` · 90 天可用性 ${uptime}%` : ""}`}
+      title={`${meta.label}${uptime !== undefined ? ` · ${t.uptime90d(uptime)}` : ""}`}
     >
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} />
       <span className="truncate max-w-[140px] sm:max-w-[190px]">{name}</span>
@@ -59,19 +55,12 @@ function ComponentChip({
 }
 
 function IncidentItem({ incident }: { incident: Incident }) {
-  const info = INCIDENT_STATUS[incident.status] ?? {
-    label: incident.status,
-    cls: "bg-zinc-100 text-zinc-600 border-zinc-200",
-  };
+  const { locale } = useI18n();
+  const statusInfo = INCIDENT_STATUS_MAP[incident.status];
+  const label = statusInfo?.[locale] ?? incident.status;
+  const cls = statusInfo?.cls ?? "bg-zinc-100 text-zinc-600 border-zinc-200";
 
-  const formattedDate = incident.createdAt
-    ? new Date(incident.createdAt).toLocaleDateString("zh-CN", {
-        month: "numeric",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "";
+  const formattedDate = formatIncidentDate(incident.createdAt, locale);
 
   return (
     <li className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 py-2 border-b border-zinc-100 last:border-b-0 text-xs">
@@ -100,9 +89,9 @@ function IncidentItem({ incident }: { incident: Incident }) {
 
       <div className="shrink-0 flex items-center">
         <span
-          className={`rounded border px-1.5 py-0.2 text-[10px] font-medium leading-tight ${info.cls}`}
+          className={`rounded border px-1.5 py-0.2 text-[10px] font-medium leading-tight ${cls}`}
         >
-          {info.label}
+          {label}
         </span>
       </div>
     </li>
@@ -115,13 +104,17 @@ export default function ProviderCard({
   provider: ProviderStatus;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const meta = LEVEL_META[p.level];
+  const { locale, t } = useI18n();
+  const meta = getLevelMeta(p.level, locale);
   const isAbnormal = p.level !== "operational" && p.level !== "unknown";
 
   const visibleComponents = expanded
     ? p.components
     : p.components.slice(0, DEFAULT_VISIBLE_COMPONENTS);
   const remainingCount = p.components.length - DEFAULT_VISIBLE_COMPONENTS;
+
+  const displayHeadline = translateHeadline(p.headline, locale);
+  const displaySource = translateSource(p.source, locale);
 
   return (
     <article className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all hover:border-zinc-300">
@@ -151,7 +144,7 @@ export default function ProviderCard({
                 )}
               </div>
               <p className="text-xs text-zinc-400 truncate mt-0.5">
-                {p.source}
+                {displaySource}
               </p>
             </div>
           </div>
@@ -169,10 +162,10 @@ export default function ProviderCard({
         <div className="mt-3.5">
           {isAbnormal ? (
             <div className="rounded-lg border border-amber-200/80 bg-amber-50/60 p-2.5 text-xs font-medium text-amber-900">
-              {p.headline}
+              {displayHeadline}
             </div>
           ) : (
-            <p className="text-xs text-zinc-500">{p.headline}</p>
+            <p className="text-xs text-zinc-500">{displayHeadline}</p>
           )}
         </div>
 
@@ -180,7 +173,10 @@ export default function ProviderCard({
         {p.error && (
           <div className="mt-3 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50/70 p-2.5 text-xs text-rose-800">
             <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-rose-600" />
-            <p className="leading-relaxed">获取失败：{p.error}</p>
+            <p className="leading-relaxed">
+              {t.fetchFailed}
+              {p.error}
+            </p>
           </div>
         )}
 
@@ -188,13 +184,13 @@ export default function ProviderCard({
         {p.components.length > 0 && (
           <div className="mt-4 pt-3 border-t border-zinc-100">
             <div className="mb-2 flex items-center justify-between text-xs text-zinc-400">
-              <span>监控组件 ({p.components.length})</span>
+              <span>{t.componentsCount(p.components.length)}</span>
               {remainingCount > 0 && (
                 <button
                   onClick={() => setExpanded(!expanded)}
-                  className="inline-flex items-center gap-0.5 text-zinc-500 hover:text-zinc-900 transition"
+                  className="inline-flex items-center gap-0.5 text-zinc-500 hover:text-zinc-900 transition cursor-pointer"
                 >
-                  <span>{expanded ? "收起" : `展开全部 (+${remainingCount})`}</span>
+                  <span>{expanded ? t.collapse : t.expandAll(remainingCount)}</span>
                   {expanded ? (
                     <ChevronUp className="h-3 w-3" />
                   ) : (
@@ -221,7 +217,7 @@ export default function ProviderCard({
         {p.incidents.length > 0 ? (
           <div className="mt-4 pt-3 border-t border-zinc-100">
             <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400">
-              {isAbnormal ? "当前事件" : "近期事件"}
+              {isAbnormal ? t.currentIncidents : t.recentIncidents}
             </div>
             <ul className="divide-y divide-zinc-50">
               {p.incidents.slice(0, 3).map((inc) => (
@@ -235,7 +231,7 @@ export default function ProviderCard({
         ) : (
           <div className="mt-4 pt-3 border-t border-zinc-100 flex items-center gap-1.5 text-xs text-zinc-400">
             <Check className="h-3 w-3 text-zinc-400" />
-            <span>近期无故障记录</span>
+            <span>{t.noRecentIncidents}</span>
           </div>
         )}
       </div>
@@ -251,7 +247,7 @@ export default function ProviderCard({
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-zinc-500 hover:text-zinc-900 transition font-medium"
         >
-          <span>官方状态</span>
+          <span>{t.officialStatus}</span>
           <ExternalLink className="h-3 w-3" />
         </a>
       </div>

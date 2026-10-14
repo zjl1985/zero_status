@@ -17,6 +17,7 @@
 
 - `GET /api/status` — Serverless 路由并行抓取各状态源（`Promise.allSettled`，单源 10s 超时），归一化为统一格式，上游与 CDN 均缓存 60s
 - `/` — 服务端直出首屏，客户端每 60s 自动轮询刷新
+- **国际化 (i18n)** — 支持中英文一键切换，智能识别浏览器偏好并持久化于 LocalStorage
 - 新增厂商：在 `lib/providers.ts` 的 `PROVIDERS` 注册表中加一条即可
 
 ## 本地开发
