@@ -153,13 +153,38 @@ function parseAtomFeed(xml: string): AtomEntry[] {
     const title = stripTags(block.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "");
     const updated = block.match(/<updated>([\s\S]*?)<\/updated>/)?.[1]?.trim() ?? "";
     const link = block.match(/<link[^>]*href="([^"]+)"/)?.[1];
-    const content = stripTags(block.match(/<content[^>]*>([\s\S]*?)<\/content>/)?.[1] ?? "");
+    const content = stripTags(
+      block.match(/<(?:content|summary)[^>]*>([\s\S]*?)<\/(?:content|summary)>/)?.[1] ?? "",
+    );
     if (title && updated) entries.push({ title, updated, link, content });
   }
   return entries;
 }
 
 const DAY_MS = 86_400_000;
+
+function isGoogleEntryResolved(e: AtomEntry): boolean {
+  if (/^RESOLVED:/i.test(e.title) || /\b(resolved|restored|closed)\b/i.test(e.title)) {
+    return true;
+  }
+  if (/resolved|restored/i.test(e.content)) return true;
+  if (/ended at|incident ended|permanently resolved|restoring normal operations/i.test(e.content)) {
+    return true;
+  }
+  return false;
+}
+
+function isAiRelated(e: AtomEntry): boolean {
+  const text = `${e.title} ${e.content}`.toLowerCase();
+  return (
+    text.includes("gemini") ||
+    text.includes("vertex") ||
+    text.includes("generative ai") ||
+    text.includes("ai platform") ||
+    text.includes("machine learning") ||
+    text.includes("cloud ai")
+  );
+}
 
 async function fetchGoogle(): Promise<{
   level: StatusLevel;
@@ -171,27 +196,34 @@ async function fetchGoogle(): Promise<{
   const entries = parseAtomFeed(xml);
   const now = Date.now();
 
-  const recent = entries.filter((e) => now - Date.parse(e.updated) < 3 * DAY_MS);
-  const active = entries.filter((e) => {
+  const activeAiIncidents = entries.filter((e) => {
     const age = now - Date.parse(e.updated);
-    return age < DAY_MS && !/resolved|restored/i.test(e.content);
+    return age < 3 * DAY_MS && isAiRelated(e) && !isGoogleEntryResolved(e);
   });
 
-  const level: StatusLevel = active.length > 0 ? "degraded" : "operational";
+  const level: StatusLevel = activeAiIncidents.length > 0 ? "degraded" : "operational";
   const headline =
-    active.length > 0
-      ? `检测到 ${active.length} 起近期事件，可能有影响`
+    activeAiIncidents.length > 0
+      ? `检测到 ${activeAiIncidents.length} 起 AI 相关事件`
       : "所有系统运行正常";
 
-  const incidents: Incident[] = entries.slice(0, 5).map((e) => ({
-    name: e.title,
-    status: /resolved|restored/i.test(e.content) ? "resolved" : "monitoring",
-    createdAt: e.updated,
-    updatedAt: e.updated,
-    url: e.link,
-  }));
+  const incidents: Incident[] = entries.slice(0, 5).map((e) => {
+    const resolved = isGoogleEntryResolved(e);
+    return {
+      name: e.title,
+      status: resolved ? "resolved" : "monitoring",
+      createdAt: e.updated,
+      updatedAt: e.updated,
+      url: e.link,
+    };
+  });
 
-  const components: ComponentStatus[] = [];
+  const components: ComponentStatus[] = [
+    { name: "Gemini API", level: "operational" },
+    { name: "Vertex AI", level: activeAiIncidents.length > 0 ? "degraded" : "operational" },
+    { name: "Google AI Studio", level: "operational" },
+    { name: "Gemini Apps", level: "operational" },
+  ];
 
   return { level, headline, components, incidents };
 }
@@ -422,7 +454,30 @@ async function fetchXai(): Promise<{
     url: i.link,
   }));
 
-  const components: ComponentStatus[] = [];
+  const hasOutage = (keywords: string[]) =>
+    active.some((item) => {
+      const text = `${item.title} ${item.categories.join(" ")}`.toLowerCase();
+      return keywords.some((k) => text.includes(k));
+    });
+
+  const components: ComponentStatus[] = [
+    {
+      name: "API (api.x.ai)",
+      level: hasOutage(["api.x.ai", "api"]) ? "degraded" : "operational",
+    },
+    {
+      name: "Grok Web (grok.com)",
+      level: hasOutage(["grok.com", "web"]) ? "degraded" : "operational",
+    },
+    {
+      name: "Grok in X",
+      level: hasOutage(["grok in x", "x.com"]) ? "degraded" : "operational",
+    },
+    {
+      name: "Enterprise Voice",
+      level: hasOutage(["voice"]) ? "degraded" : "operational",
+    },
+  ];
 
   return { level, headline, components, incidents };
 }

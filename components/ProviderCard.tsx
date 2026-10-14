@@ -63,36 +63,42 @@ function IncidentItem({ incident }: { incident: Incident }) {
   const formattedDate = formatIncidentDate(incident.createdAt, locale);
 
   return (
-    <li className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 py-2 border-b border-zinc-100 last:border-b-0 text-xs">
-      <div className="min-w-0 flex-1">
-        {incident.url ? (
-          <a
-            href={incident.url}
-            target="_blank"
-            rel="noreferrer"
-            className="group inline-flex items-center gap-1 font-medium text-zinc-800 hover:text-zinc-950 transition"
-          >
-            <span className="truncate">{incident.name}</span>
-            <ExternalLink className="h-3 w-3 shrink-0 opacity-40 group-hover:opacity-100" />
-          </a>
-        ) : (
-          <span className="font-medium text-zinc-800 truncate block">
-            {incident.name}
-          </span>
-        )}
-        {formattedDate && (
-          <span className="text-[11px] text-zinc-400 block mt-0.5">
-            {formattedDate}
-          </span>
-        )}
-      </div>
+    <li className="py-2.5 border-b border-zinc-100 last:border-b-0 text-xs">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {incident.url ? (
+            <a
+              href={incident.url}
+              target="_blank"
+              rel="noreferrer"
+              title={incident.name}
+              className="group flex items-center gap-1 font-medium text-zinc-800 hover:text-zinc-950 transition min-w-0"
+            >
+              <span className="truncate min-w-0">{incident.name}</span>
+              <ExternalLink className="h-3 w-3 shrink-0 opacity-40 group-hover:opacity-100" />
+            </a>
+          ) : (
+            <span
+              title={incident.name}
+              className="font-medium text-zinc-800 truncate block min-w-0"
+            >
+              {incident.name}
+            </span>
+          )}
+          {formattedDate && (
+            <span className="text-[11px] text-zinc-400 block mt-0.5">
+              {formattedDate}
+            </span>
+          )}
+        </div>
 
-      <div className="shrink-0 flex items-center">
-        <span
-          className={`rounded border px-1.5 py-0.2 text-[10px] font-medium leading-tight ${cls}`}
-        >
-          {label}
-        </span>
+        <div className="shrink-0 flex items-center pt-0.5">
+          <span
+            className={`rounded border px-1.5 py-0.5 text-[10px] font-medium leading-none whitespace-nowrap ${cls}`}
+          >
+            {label}
+          </span>
+        </div>
       </div>
     </li>
   );
