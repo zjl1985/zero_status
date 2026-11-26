@@ -1,8 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
-  themeColor: "#fafaf9",
+  themeColor: "#f2f4f7",
   colorScheme: "light",
 };
 
@@ -33,11 +48,12 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN">
-      <body className="min-h-screen bg-[#fafaf9] text-zinc-900 antialiased selection:bg-zinc-200 selection:text-zinc-900">
-        <main className="relative flex min-h-screen flex-col">
-          {children}
-        </main>
+    <html
+      lang="zh-CN"
+      className={`${plusJakartaSans.variable} ${spaceGrotesk.variable}`}
+    >
+      <body className="min-h-screen antialiased">
+        <main className="relative flex min-h-screen flex-col">{children}</main>
       </body>
     </html>
   );

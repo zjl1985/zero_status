@@ -1,17 +1,125 @@
 @import "tailwindcss";
 
+:root {
+  /* Architectural cool mineral palette */
+  --bg-canvas: #f2f4f7;
+  --bg-surface: #ffffff;
+  --bg-subtle: #e8edf3;
+  --bg-hover: #f7f9fc;
+
+  --border-subtle: #dce2ec;
+  --border-strong: #bcc7d8;
+
+  /* Ink hierarchy (all meet WCAG AA >= 4.5:1 on white and canvas) */
+  --text-primary: #0b1220;
+  --text-secondary: #344054;
+  --text-muted: #525f72;
+
+  /* Single deliberate UI accent */
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-soft: #eff4ff;
+
+  /* Semantic service health tokens */
+  --status-ok: #059669;
+  --status-ok-text: #047857;
+  --status-ok-tint: #ecfdf5;
+
+  --status-degraded: #d97706;
+  --status-degraded-text: #b45309;
+  --status-degraded-tint: #fffbeb;
+
+  --status-partial: #ea580c;
+  --status-partial-text: #c2410c;
+  --status-partial-tint: #fff7ed;
+
+  --status-major: #e11d48;
+  --status-major-text: #be123c;
+  --status-major-tint: #fff1f2;
+
+  --status-maint: #0284c7;
+  --status-maint-text: #0369a1;
+  --status-maint-tint: #f0f9ff;
+
+  --status-unknown: #64748b;
+  --status-unknown-text: #475569;
+  --status-unknown-tint: #f1f5f9;
+
+  /* Strict 3-size body scale */
+  --text-heading: 1.125rem; /* 18px */
+  --text-body: 0.9375rem; /* 15px */
+  --text-sm: 0.8125rem; /* 13px */
+
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --font-sans: var(--font-sans), "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font-display), var(--font-sans), "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+
 html {
   color-scheme: light;
+  scroll-behavior: smooth;
 }
 
 body {
-  background-color: #fafaf9;
-  color: #18181b;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.5;
   min-height: 100vh;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Restrained scrollbar */
+::selection {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Explicit motion curves */
+.ui-transition-colors {
+  transition-property: color, background-color, border-color;
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease-out-quart);
+}
+
+.ui-transition-transform {
+  transition-property: transform, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease-out-quart);
+}
+
+.ui-transition-header {
+  transition-property: background-color, border-color, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: var(--ease-out-quart);
+}
+
+@keyframes cardHighlight {
+  0% {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.provider-flash {
+  animation: cardHighlight 1.1s var(--ease-out-quart) 1;
+}
+
+/* Subtle architectural scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -20,9 +128,22 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+  background: var(--border-strong);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

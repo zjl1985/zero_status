@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StatusLevel, StatusResponse } from "@/lib/types";
 import ProviderCard from "./ProviderCard";
-import { RefreshCw, Search, X, Radio, Globe } from "lucide-react";
+import { RefreshCw, Search, X, ArrowUpRight } from "lucide-react";
 import {
   formatTimeAgo,
   getLevelMeta,
@@ -23,20 +23,53 @@ const SEVERITY: StatusLevel[] = [
 
 type FilterTab = "all" | "issues" | "operational";
 
+const SHORT_NAMES: Record<string, string> = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  "google-gemini": "Google Gemini",
+  xai: "xAI (Grok)",
+  perplexity: "Perplexity",
+  deepseek: "DeepSeek",
+};
+
+function BrandMark() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      <rect width="24" height="24" rx="5" fill="#0b1220" />
+      <rect x="5" y="13" width="3" height="6" rx="1" fill="#64748b" />
+      <rect x="10.5" y="9" width="3" height="10" rx="1" fill="#94a3b8" />
+      <rect x="16" y="5" width="3" height="14" rx="1" fill="#10b981" />
+    </svg>
+  );
+}
+
 function TimeAgo({ iso }: { iso: string }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
     setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 15_000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(timer);
   }, []);
 
-  if (now === null) return <span suppressHydrationWarning>—</span>;
+  if (now === null) {
+    return (
+      <span className="tabular-nums" suppressHydrationWarning>
+        {t.justNow}
+      </span>
+    );
+  }
 
   return (
-    <span suppressHydrationWarning>
+    <span className="tabular-nums" suppressHydrationWarning>
       {formatTimeAgo(iso, now, locale)}
     </span>
   );
@@ -49,6 +82,8 @@ function StatusBoardInner({ initial }: { initial: StatusResponse }) {
   const [auto, setAuto] = useState(true);
   const [query, setQuery] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("all");
+  const [scrolled, setScrolled] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -58,7 +93,7 @@ function StatusBoardInner({ initial }: { initial: StatusResponse }) {
         setData(await res.json());
       }
     } catch {
-      // 保留旧数据
+      // Retain existing status payload on transient network error
     } finally {
       setLoading(false);
     }
@@ -69,6 +104,13 @@ function StatusBoardInner({ initial }: { initial: StatusResponse }) {
     const timer = setInterval(refresh, 60_000);
     return () => clearInterval(timer);
   }, [auto, refresh]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const totalProviders = data.providers.length;
   const operationalCount = data.providers.filter(
@@ -91,7 +133,6 @@ function StatusBoardInner({ initial }: { initial: StatusResponse }) {
   const allOk = issueCount === 0;
   const worstMeta = getLevelMeta(worst, locale);
 
-  // 过滤逻辑（支持双语状态、标题、名称筛选）
   const filteredProviders = useMemo(() => {
     return data.providers.filter((p) => {
       if (filterTab === "issues" && p.level === "operational") return false;
@@ -113,198 +154,306 @@ function StatusBoardInner({ initial }: { initial: StatusResponse }) {
     });
   }, [data.providers, filterTab, query, locale]);
 
-  return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-      {/* 顶部标题与控制 */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200/80 pb-6">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-50/70 shadow-xs">
-            <Radio className="h-5 w-5 text-emerald-600" />
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            </span>
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">
-              LLM Status
-            </h1>
-            <p className="mt-0.5 text-xs text-zinc-500">{t.subtitle}</p>
-          </div>
-        </div>
+  const jumpToProvider = useCallback((id: string) => {
+    setQuery("");
+    setFilterTab("all");
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`provider-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightedId(id);
+        window.setTimeout(() => {
+          setHighlightedId((curr) => (curr === id ? null : curr));
+        }, 1200);
+      }
+    });
+  }, []);
 
-        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-          <span>
-            {t.updated} <TimeAgo iso={data.generatedAt} />
-          </span>
-          <span className="text-zinc-300">·</span>
-          <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={auto}
-              onChange={(e) => setAuto(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-800 accent-zinc-800 focus:ring-0"
-            />
-            <span>{t.autoRefresh}</span>
-          </label>
-          <button
-            onClick={refresh}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-sm transition hover:bg-zinc-50 hover:text-zinc-950 disabled:opacity-50 cursor-pointer"
+  return (
+    <div className="flex min-h-screen flex-col overflow-x-clip">
+      {/* Sticky single-line utility navigation */}
+      <header
+        className={`sticky top-0 z-30 ui-transition-header ${
+          scrolled
+            ? "border-b border-[var(--border-subtle)] bg-white/95 shadow-[0_1px_2px_rgba(11,18,32,0.04)] backdrop-blur-md"
+            : "border-b border-transparent bg-[var(--bg-surface)]"
+        }`}
+      >
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3.5 sm:px-6 lg:h-16 lg:flex-nowrap lg:px-8 lg:py-0">
+          {/* Brand wordmark */}
+          <a
+            href="#top"
+            className="inline-flex items-center gap-2.5 text-[var(--text-primary)]"
           >
-            <RefreshCw
-              className={`h-3 w-3 ${loading ? "animate-spin text-zinc-800" : ""}`}
-            />
-            <span>{loading ? t.refreshing : t.refresh}</span>
-          </button>
-          <span className="text-zinc-300">·</span>
-          {/* 中英文语言切换按钮 */}
-          <div className="inline-flex items-center rounded-lg border border-zinc-200/80 bg-zinc-100/70 p-0.5 text-xs">
-            <Globe className="h-3 w-3 text-zinc-400 ml-1.5 mr-1" />
+            <BrandMark />
+            <span className="font-display text-[1.25rem] font-bold tracking-[-0.03em]">
+              LLM Status
+            </span>
+          </a>
+
+          {/* Right utility controls */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[length:var(--text-sm)] text-[var(--text-muted)] sm:gap-x-5">
+            <span className="hidden md:inline">
+              {t.updated} <TimeAgo iso={data.generatedAt} />
+            </span>
+
+            {/* Auto-refresh accessible switch */}
             <button
-              onClick={() => setLocale("zh")}
-              className={`rounded-md px-2 py-0.5 font-medium transition cursor-pointer ${
-                locale === "zh"
-                  ? "bg-white text-zinc-950 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-900"
-              }`}
+              type="button"
+              role="switch"
+              aria-checked={auto}
+              onClick={() => setAuto((v) => !v)}
+              className="inline-flex cursor-pointer items-center gap-2 select-none text-[var(--text-secondary)] ui-transition-colors hover:text-[var(--text-primary)]"
             >
-              中文
+              <span
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full ui-transition-colors ${
+                  auto ? "bg-[var(--text-primary)]" : "bg-[var(--border-strong)]"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 rounded-full bg-white ui-transition-transform ${
+                    auto ? "translate-x-[18px]" : "translate-x-[3px]"
+                  }`}
+                />
+              </span>
+              <span>{t.autoRefresh}</span>
             </button>
-            <button
-              onClick={() => setLocale("en")}
-              className={`rounded-md px-2 py-0.5 font-medium transition cursor-pointer ${
-                locale === "en"
-                  ? "bg-white text-zinc-950 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-900"
-              }`}
+
+            {/* Connected language segmented control */}
+            <div
+              role="group"
+              aria-label="Language"
+              className="inline-flex items-center rounded-md bg-[var(--bg-subtle)] p-0.5"
             >
-              EN
+              <button
+                type="button"
+                onClick={() => setLocale("zh")}
+                aria-pressed={locale === "zh"}
+                className={`cursor-pointer rounded px-2.5 py-1 font-medium ui-transition-colors ${
+                  locale === "zh"
+                    ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(11,18,32,0.08)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                中文
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocale("en")}
+                aria-pressed={locale === "en"}
+                className={`cursor-pointer rounded px-2.5 py-1 font-medium ui-transition-colors ${
+                  locale === "en"
+                    ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(11,18,32,0.08)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                EN
+              </button>
+            </div>
+
+            {/* Single primary action */}
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={loading}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[var(--text-primary)] px-3.5 py-1.5 font-medium text-white ui-transition-colors hover:bg-[var(--accent)] disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              />
+              <span>{loading ? t.refreshing : t.refresh}</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hero 状态总览横幅 */}
-      <div
-        className={`mt-6 flex items-center justify-between rounded-xl border p-4 transition ${worstMeta.bg} ${worstMeta.border}`}
+      {/* Immediate live status masthead bleeding seamlessly from header */}
+      <section
+        id="top"
+        className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]"
       >
-        <div className="flex items-center gap-3">
-          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${worstMeta.dot}`} />
-          <div>
-            <p className={`text-sm font-medium ${worstMeta.text}`}>
-              {allOk ? t.allNormal : t.issuesDetected(issueCount)}
-            </p>
-            {!allOk && (
-              <p className="mt-0.5 text-xs text-zinc-600">
-                {t.affectedProviders}
-                {abnormalProviders
-                  .map((p) => p.name)
-                  .join(locale === "zh" ? "、" : ", ")}
+        <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-6 sm:px-6 sm:pb-10 sm:pt-8 lg:px-8">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div className="min-w-0">
+              <div className="flex items-start gap-3">
+                <span
+                  className={`mt-[0.42em] h-3 w-3 shrink-0 rounded-full ${worstMeta.dot}`}
+                  style={{ fontSize: "clamp(1.625rem, 3vw, 2.5rem)" }}
+                  aria-hidden="true"
+                />
+                <h1 className="font-display text-[clamp(1.625rem,3vw,2.5rem)] font-semibold leading-[1.15] tracking-[-0.03em] text-[var(--text-primary)]">
+                  {allOk ? t.allNormal : t.issuesDetected(issueCount)}
+                </h1>
+              </div>
+
+              <p className="mt-3 max-w-[65ch] text-[length:var(--text-body)] text-[var(--text-muted)] sm:pl-6">
+                {allOk
+                  ? t.subtitle
+                  : `${t.affectedProviders}${abnormalProviders
+                      .map((p) => p.name)
+                      .join(locale === "zh" ? "、" : ", ")}`}
               </p>
+            </div>
+
+            <div className="flex shrink-0 items-baseline justify-between gap-4 sm:flex-col sm:items-end">
+              <span
+                className={`font-display tabular-nums text-[length:var(--text-heading)] font-semibold tracking-[-0.02em] ${worstMeta.text}`}
+              >
+                {t.operationalSummary(operationalCount, totalProviders)}
+              </span>
+              <span className="text-[length:var(--text-sm)] text-[var(--text-muted)] md:hidden">
+                {t.updated} <TimeAgo iso={data.generatedAt} />
+              </span>
+            </div>
+          </div>
+
+          {/* Interactive 6-provider live telemetry bar */}
+          <nav
+            aria-label="Provider quick jump"
+            className="mt-7 grid grid-cols-2 gap-x-5 gap-y-4 border-t border-[var(--border-subtle)] pt-6 sm:grid-cols-3 lg:grid-cols-6"
+          >
+            {data.providers.map((p) => {
+              const meta = getLevelMeta(p.level, locale);
+              const shortName = SHORT_NAMES[p.id] ?? p.name;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => jumpToProvider(p.id)}
+                  title={t.jumpToProvider(p.name)}
+                  className="group flex min-w-0 cursor-pointer flex-col text-left focus:outline-none"
+                >
+                  <span
+                    className={`h-1.5 w-full rounded-full ui-transition-transform group-hover:scale-y-125 ${meta.bar}`}
+                  />
+                  <span className="mt-2.5 flex items-baseline justify-between gap-2 text-[length:var(--text-sm)]">
+                    <span className="truncate font-medium text-[var(--text-primary)] ui-transition-colors group-hover:text-[var(--accent)]">
+                      {shortName}
+                    </span>
+                  </span>
+                  <span
+                    className={`mt-0.5 truncate text-[length:var(--text-sm)] ${
+                      p.level === "operational"
+                        ? "text-[var(--text-muted)]"
+                        : `${meta.text} font-medium`
+                    }`}
+                  >
+                    {meta.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </section>
+
+      {/* Main live workspace */}
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {/* Filter tabs + search input */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            role="tablist"
+            aria-label="Status filter"
+            className="inline-flex self-start rounded-lg bg-[var(--bg-subtle)] p-1 text-[length:var(--text-sm)]"
+          >
+            {(
+              [
+                { key: "all", label: t.tabAll(totalProviders) },
+                { key: "issues", label: t.tabIssues(issueCount) },
+                { key: "operational", label: t.tabOperational(operationalCount) },
+              ] as const
+            ).map((tab) => {
+              const active = filterTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setFilterTab(tab.key)}
+                  className={`cursor-pointer rounded-md px-3.5 py-1.5 tabular-nums font-medium ui-transition-colors ${
+                    active
+                      ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[0_1px_2px_rgba(11,18,32,0.08)]"
+                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search input */}
+          <div className="relative w-full sm:w-80">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-2 pl-9 pr-8 text-[length:var(--text-sm)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] ui-transition-colors focus:border-[var(--accent)] focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label={t.clearSearch}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer p-0.5 text-[var(--text-muted)] ui-transition-colors hover:text-[var(--text-primary)]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             )}
           </div>
         </div>
 
-        <span className="text-xs text-zinc-500 font-mono hidden sm:inline">
-          {t.operationalSummary(operationalCount, totalProviders)}
-        </span>
-      </div>
-
-      {/* 工具栏：分段控件 + 搜索框 */}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* 分段过滤控件 */}
-        <div className="inline-flex rounded-lg border border-zinc-200/80 bg-zinc-100/70 p-0.5 text-xs">
-          <button
-            onClick={() => setFilterTab("all")}
-            className={`rounded-md px-3 py-1 font-medium transition cursor-pointer ${
-              filterTab === "all"
-                ? "bg-white text-zinc-950 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-950"
-            }`}
-          >
-            {t.tabAll(totalProviders)}
-          </button>
-          <button
-            onClick={() => setFilterTab("issues")}
-            className={`rounded-md px-3 py-1 font-medium transition cursor-pointer ${
-              filterTab === "issues"
-                ? "bg-white text-zinc-950 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-950"
-            }`}
-          >
-            {t.tabIssues(issueCount)}
-          </button>
-          <button
-            onClick={() => setFilterTab("operational")}
-            className={`rounded-md px-3 py-1 font-medium transition cursor-pointer ${
-              filterTab === "operational"
-                ? "bg-white text-zinc-950 shadow-sm"
-                : "text-zinc-600 hover:text-zinc-950"
-            }`}
-          >
-            {t.tabOperational(operationalCount)}
-          </button>
-        </div>
-
-        {/* 搜索框 */}
-        <div className="relative w-full sm:w-64">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            className="w-full rounded-lg border border-zinc-200 bg-white py-1.5 pl-8 pr-7 text-xs text-zinc-900 placeholder-zinc-400 shadow-sm transition focus:border-zinc-400 focus:outline-none"
-          />
-          {query && (
+        {/* Provider status grid */}
+        {filteredProviders.length > 0 ? (
+          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {filteredProviders.map((p) => (
+              <ProviderCard
+                key={p.id}
+                provider={p}
+                highlighted={highlightedId === p.id}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-8 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-16 text-center">
+            <p className="font-display text-[length:var(--text-heading)] font-semibold text-[var(--text-primary)]">
+              {t.noResultsTitle}
+            </p>
+            <p className="mt-1.5 text-[length:var(--text-body)] text-[var(--text-muted)]">
+              {t.noResultsHint}
+            </p>
             <button
-              onClick={() => setQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setFilterTab("all");
+              }}
+              className="mt-5 inline-flex cursor-pointer items-center rounded-md bg-[var(--text-primary)] px-4 py-2 text-[length:var(--text-sm)] font-medium text-white ui-transition-colors hover:bg-[var(--accent)]"
             >
-              <X className="h-3 w-3" />
+              {t.resetFilter}
             </button>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <footer className="mt-14 border-t border-[var(--border-subtle)] pt-6 text-[length:var(--text-sm)] text-[var(--text-muted)]">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <p className="max-w-[65ch]">{t.footerText}</p>
+            <a
+              href="/api/status"
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex shrink-0 items-center gap-1 font-medium text-[var(--text-secondary)] ui-transition-colors hover:text-[var(--accent)]"
+            >
+              <span>{t.apiEndpoint}</span>
+              <ArrowUpRight className="h-3.5 w-3.5 ui-transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </a>
+          </div>
+        </footer>
       </div>
-
-      {/* 厂商列表网格 */}
-      {filteredProviders.length > 0 ? (
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {filteredProviders.map((p) => (
-            <ProviderCard key={p.id} provider={p} />
-          ))}
-        </div>
-      ) : (
-        <div className="mt-8 rounded-xl border border-dashed border-zinc-200 bg-white py-12 text-center">
-          <p className="text-sm font-medium text-zinc-700">{t.noResultsTitle}</p>
-          <p className="mt-1 text-xs text-zinc-400">{t.noResultsHint}</p>
-          <button
-            onClick={() => {
-              setQuery("");
-              setFilterTab("all");
-            }}
-            className="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 cursor-pointer"
-          >
-            {t.resetFilter}
-          </button>
-        </div>
-      )}
-
-      {/* 页脚说明 */}
-      <footer className="mt-12 border-t border-zinc-200/80 pt-6 text-xs text-zinc-500">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p>{t.footerText}</p>
-          <a
-            href="/api/status"
-            target="_blank"
-            rel="noreferrer"
-            className="text-zinc-500 hover:text-zinc-900 underline underline-offset-2 transition"
-          >
-            {t.apiEndpoint}
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }
