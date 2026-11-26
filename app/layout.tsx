@@ -1,20 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-
-const geist = Geist({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  variable: "--font-geist-sans",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-geist-mono",
-  display: "swap",
-});
 
 export const viewport: Viewport = {
   themeColor: "#e8e8e4",
@@ -48,7 +35,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN" className={`${geist.variable} ${geistMono.variable}`}>
+    <html
+      lang="zh-CN"
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+    >
       <body className="min-h-screen antialiased">
         <main className="relative flex min-h-screen flex-col">{children}</main>
       </body>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ComponentStatus, Incident, ProviderStatus, StatusLevel } from "@/lib/types";
+import type { ComponentStatus, Incident, ProviderStatus } from "@/lib/types";
 import {
   formatShortDate,
   getLevelMeta,
