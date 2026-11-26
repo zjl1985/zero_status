@@ -16,52 +16,52 @@ export interface LevelStyle {
   dot: string;
   text: string;
   bar: string;
-  tint: string;
-  rule: string;
+  hex: string;
+  softBg: string;
 }
 
 const LEVEL_STYLES: Record<StatusLevel, Omit<LevelStyle, "label">> = {
   operational: {
-    dot: "bg-[#059669]",
+    dot: "bg-[#10b981]",
     text: "text-[#047857]",
     bar: "bg-[#10b981]",
-    tint: "bg-[#ecfdf5]",
-    rule: "border-l-[#059669]",
+    hex: "#10b981",
+    softBg: "bg-[#10b981]/10",
   },
   degraded: {
-    dot: "bg-[#d97706]",
+    dot: "bg-[#f59e0b]",
     text: "text-[#b45309]",
     bar: "bg-[#f59e0b]",
-    tint: "bg-[#fffbeb]",
-    rule: "border-l-[#d97706]",
+    hex: "#f59e0b",
+    softBg: "bg-[#f59e0b]/12",
   },
   partial_outage: {
-    dot: "bg-[#ea580c]",
+    dot: "bg-[#f97316]",
     text: "text-[#c2410c]",
     bar: "bg-[#f97316]",
-    tint: "bg-[#fff7ed]",
-    rule: "border-l-[#ea580c]",
+    hex: "#f97316",
+    softBg: "bg-[#f97316]/12",
   },
   major_outage: {
-    dot: "bg-[#e11d48]",
-    text: "text-[#be123c]",
-    bar: "bg-[#f43f5e]",
-    tint: "bg-[#fff1f2]",
-    rule: "border-l-[#e11d48]",
+    dot: "bg-[#ef4444]",
+    text: "text-[#b91c1c]",
+    bar: "bg-[#ef4444]",
+    hex: "#ef4444",
+    softBg: "bg-[#ef4444]/12",
   },
   maintenance: {
-    dot: "bg-[#0284c7]",
-    text: "text-[#0369a1]",
-    bar: "bg-[#0ea5e9]",
-    tint: "bg-[#f0f9ff]",
-    rule: "border-l-[#0284c7]",
+    dot: "bg-[#2b4bff]",
+    text: "text-[#1d3be6]",
+    bar: "bg-[#2b4bff]",
+    hex: "#2b4bff",
+    softBg: "bg-[#2b4bff]/10",
   },
   unknown: {
-    dot: "bg-[#64748b]",
-    text: "text-[#475569]",
-    bar: "bg-[#94a3b8]",
-    tint: "bg-[#f1f5f9]",
-    rule: "border-l-[#64748b]",
+    dot: "bg-[#a1a19a]",
+    text: "text-[#575752]",
+    bar: "bg-[#a1a19a]",
+    hex: "#a1a19a",
+    softBg: "bg-[#a1a19a]/14",
   },
 };
 
@@ -86,139 +86,165 @@ const LEVEL_LABELS: Record<Locale, Record<StatusLevel, string>> = {
 
 export const INCIDENT_STATUS_MAP: Record<
   string,
-  { zh: string; en: string; textCls: string; dotCls: string }
+  { zh: string; en: string; textCls: string; dotCls: string; active: boolean }
 > = {
   investigating: {
     zh: "调查中",
     en: "Investigating",
     textCls: "text-[#b45309]",
-    dotCls: "bg-[#d97706]",
+    dotCls: "bg-[#f59e0b]",
+    active: true,
   },
   identified: {
     zh: "已定位",
     en: "Identified",
     textCls: "text-[#c2410c]",
-    dotCls: "bg-[#ea580c]",
+    dotCls: "bg-[#f97316]",
+    active: true,
   },
   monitoring: {
     zh: "监控中",
     en: "Monitoring",
-    textCls: "text-[#0369a1]",
-    dotCls: "bg-[#0284c7]",
+    textCls: "text-[#1d3be6]",
+    dotCls: "bg-[#2b4bff]",
+    active: true,
   },
   resolved: {
     zh: "已恢复",
     en: "Resolved",
-    textCls: "text-[#525f72]",
-    dotCls: "bg-[#94a3b8]",
+    textCls: "text-[#767670]",
+    dotCls: "bg-[#b5b5ae]",
+    active: false,
   },
   scheduled: {
     zh: "已排期",
     en: "Scheduled",
-    textCls: "text-[#525f72]",
-    dotCls: "bg-[#94a3b8]",
+    textCls: "text-[#767670]",
+    dotCls: "bg-[#b5b5ae]",
+    active: false,
   },
   in_progress: {
     zh: "进行中",
     en: "In progress",
     textCls: "text-[#b45309]",
-    dotCls: "bg-[#d97706]",
+    dotCls: "bg-[#f59e0b]",
+    active: true,
   },
   verifying: {
     zh: "验证中",
     en: "Verifying",
-    textCls: "text-[#1d4ed8]",
-    dotCls: "bg-[#2563eb]",
+    textCls: "text-[#1d3be6]",
+    dotCls: "bg-[#2b4bff]",
+    active: true,
   },
   completed: {
     zh: "已完成",
     en: "Completed",
-    textCls: "text-[#525f72]",
-    dotCls: "bg-[#94a3b8]",
+    textCls: "text-[#767670]",
+    dotCls: "bg-[#b5b5ae]",
+    active: false,
   },
   postmortem: {
     zh: "复盘",
     en: "Postmortem",
     textCls: "text-[#6d28d9]",
     dotCls: "bg-[#7c3aed]",
+    active: false,
   },
 };
 
 export const DICTIONARY = {
   zh: {
     title: "LLM Status · 全球大模型服务状态监控",
-    subtitle: "聚合 OpenAI、Anthropic、Google Gemini、xAI、Perplexity 与 DeepSeek 官方状态源",
+    subtitle: "官方状态页实时遥测",
+    globalPulse: "全局健康",
+    allNormal: "所有监控服务运行正常",
+    issuesDetected: (count: number) => `${count} 家服务存在异常`,
+    affectedProviders: "涉及：",
+    operationalRatio: "服务正常",
+    liveSync: "实时同步",
+    syncPaused: "同步已暂停",
+    syncOn: "开启",
+    syncOff: "暂停",
+    syncNow: "立即同步",
+    syncing: "同步中",
+    nextSync: "下次同步",
     updated: "更新于",
     justNow: "刚刚",
     secondsAgo: (s: number) => `${s} 秒前`,
     minutesAgo: (m: number) => `${m} 分钟前`,
     daysAgo: (d: number) => `${d} 天前`,
-    autoRefresh: "自动刷新",
-    refreshing: "更新中",
-    refresh: "刷新状态",
-    allNormal: "所有监控服务目前运行正常",
-    issuesDetected: (count: number) => `${count} 个服务存在性能下降或异常`,
-    affectedProviders: "涉及厂商：",
-    operationalSummary: (ok: number, total: number) => `${ok} / ${total} 正常`,
-    tabAll: (total: number) => `全部 (${total})`,
-    tabIssues: (issues: number) => `异常 (${issues})`,
-    tabOperational: (ops: number) => `正常 (${ops})`,
-    searchPlaceholder: "按厂商、组件或事件筛选...",
+    incidentFeed: "事件动态",
+    activeIncidentsCount: (n: number) => `${n} 起进行中`,
+    recentLogsCount: (n: number) => `近 ${n} 条记录`,
+    noRecentIncidents: "近期无故障记录",
+    tabAll: (total: number) => `全部 ${total}`,
+    tabIssues: (issues: number) => `异常 ${issues}`,
+    tabOperational: (ops: number) => `正常 ${ops}`,
+    searchPlaceholder: "搜索厂商、模型组件或事件...",
     clearSearch: "清除搜索",
-    noResultsTitle: "未找到匹配的服务",
-    noResultsHint: "请尝试清除搜索关键词或切换筛选状态",
+    noResultsTitle: "未找到匹配服务",
+    noResultsHint: "清除搜索关键词或切换状态筛选",
     resetFilter: "重置筛选",
-    footerText:
-      "数据聚合自 OpenAI、Anthropic、Google Cloud、xAI、Perplexity 与 DeepSeek 官方状态页，每 60 秒自动同步。",
-    apiEndpoint: "JSON API (/api/status)",
-    componentsCount: (count: number) => `监控组件 (${count})`,
-    collapse: "收起",
-    expandAll: (count: number) => `展开其余 ${count} 项`,
+    componentsHealthy: "组件正常",
+    avgUptime90d: "90 天均值",
+    expandComponents: (count: number) => `展开全部 ${count} 项`,
+    collapseComponents: "收起组件",
     uptime90d: (uptime: number) => `90 天可用性 ${uptime}%`,
     currentIncidents: "当前事件",
     recentIncidents: "近期事件",
-    noRecentIncidents: "近期无故障记录",
-    officialStatus: "官方状态页",
+    officialStatus: "官方页",
     fetchFailed: "获取失败：",
+    footerText:
+      "聚合自 OpenAI、Anthropic、Google Cloud、xAI、Perplexity 与 DeepSeek 官方状态源。",
+    apiEndpoint: "JSON API",
     jumpToProvider: (name: string) => `定位至 ${name}`,
   },
   en: {
     title: "LLM Status · Real-Time AI Service Monitor",
-    subtitle:
-      "Aggregated official status feeds across OpenAI, Anthropic, Google Gemini, xAI, Perplexity, and DeepSeek",
+    subtitle: "Live official status telemetry",
+    globalPulse: "Global pulse",
+    allNormal: "All services operating normally",
+    issuesDetected: (count: number) =>
+      `${count} ${count === 1 ? "provider" : "providers"} degraded`,
+    affectedProviders: "Affected: ",
+    operationalRatio: "operational",
+    liveSync: "Live sync",
+    syncPaused: "Sync paused",
+    syncOn: "On",
+    syncOff: "Off",
+    syncNow: "Sync now",
+    syncing: "Syncing",
+    nextSync: "Next sync",
     updated: "Updated",
     justNow: "just now",
     secondsAgo: (s: number) => `${s}s ago`,
     minutesAgo: (m: number) => `${m}m ago`,
     daysAgo: (d: number) => `${d}d ago`,
-    autoRefresh: "Auto refresh",
-    refreshing: "Updating",
-    refresh: "Refresh",
-    allNormal: "All monitored services are operating normally",
-    issuesDetected: (count: number) =>
-      `${count} ${count === 1 ? "service has" : "services have"} active issues`,
-    affectedProviders: "Affected: ",
-    operationalSummary: (ok: number, total: number) => `${ok} / ${total} operational`,
-    tabAll: (total: number) => `All (${total})`,
-    tabIssues: (issues: number) => `Issues (${issues})`,
-    tabOperational: (ops: number) => `Operational (${ops})`,
-    searchPlaceholder: "Filter by provider, component, or incident...",
+    incidentFeed: "Incident feed",
+    activeIncidentsCount: (n: number) => `${n} active`,
+    recentLogsCount: (n: number) => `${n} recent`,
+    noRecentIncidents: "No recent incidents",
+    tabAll: (total: number) => `All ${total}`,
+    tabIssues: (issues: number) => `Issues ${issues}`,
+    tabOperational: (ops: number) => `Normal ${ops}`,
+    searchPlaceholder: "Filter providers, components, incidents...",
     clearSearch: "Clear search",
-    noResultsTitle: "No matching services found",
+    noResultsTitle: "No matching services",
     noResultsHint: "Clear the search query or switch the status filter",
     resetFilter: "Reset filters",
-    footerText:
-      "Data aggregated from official status pages of OpenAI, Anthropic, Google Cloud, xAI, Perplexity, and DeepSeek. Synced every 60 seconds.",
-    apiEndpoint: "JSON API (/api/status)",
-    componentsCount: (count: number) => `Components (${count})`,
-    collapse: "Collapse",
-    expandAll: (count: number) => `Show ${count} more`,
+    componentsHealthy: "healthy",
+    avgUptime90d: "90d avg",
+    expandComponents: (count: number) => `All ${count} components`,
+    collapseComponents: "Collapse",
     uptime90d: (uptime: number) => `90-day uptime ${uptime}%`,
-    currentIncidents: "Current incidents",
+    currentIncidents: "Active incidents",
     recentIncidents: "Recent incidents",
-    noRecentIncidents: "No recent incidents",
-    officialStatus: "Official status",
+    officialStatus: "Status page",
     fetchFailed: "Fetch failed: ",
+    footerText:
+      "Aggregated from official status feeds of OpenAI, Anthropic, Google Cloud, xAI, Perplexity, and DeepSeek.",
+    apiEndpoint: "JSON API",
     jumpToProvider: (name: string) => `Jump to ${name}`,
   },
 } as const;
@@ -237,45 +263,34 @@ export function translateHeadline(headline: string, locale: Locale): string {
     if (/^Minor Service Outage$/i.test(headline)) return "部分服务异常";
     if (/^Partial System Outage$/i.test(headline)) return "系统部分故障";
     if (/^Major System Outage$/i.test(headline)) return "系统严重故障";
+    if (/^Partial System Degradation$/i.test(headline)) return "部分系统性能下降";
+    if (/^Partially Degraded Service$/i.test(headline)) return "部分服务性能下降";
     return headline;
   } else {
     if (headline === "所有系统运行正常") return "All systems operational";
     if (headline === "无法获取状态") return "Unable to fetch status";
     const m1 = headline.match(/^检测到 (\d+) 起近期事件，可能有影响$/);
-    if (m1) return `${m1[1]} recent incident(s) detected with possible impact`;
+    if (m1) return `${m1[1]} recent incident(s) detected`;
     const m1b = headline.match(/^检测到 (\d+) 起 AI 相关事件$/);
-    if (m1b) return `${m1b[1]} active AI-related incident(s) detected`;
+    if (m1b) return `${m1b[1]} active AI-related incident(s)`;
     const m2 = headline.match(/^(\d+) 个组件异常$/);
     if (m2) return `${m2[1]} component(s) degraded`;
     const m3 = headline.match(/^(\d+) 起事件处理中$/);
-    if (m3) return `${m3[1]} active incident(s) in progress`;
+    if (m3) return `${m3[1]} active incident(s)`;
     return headline;
   }
 }
 
-export function translateSource(source: string, locale: Locale): string {
-  if (locale === "zh") return source;
-  const map: Record<string, string> = {
-    官方状态页: "Official status page",
-    "Google Cloud 事件流（推断）": "Google Cloud feed (inferred)",
-    "官方状态页 RSS（推断）": "Official RSS feed (inferred)",
-    "官方状态页（FlashCat）": "Official status (FlashCat)",
-  };
-  return map[source] || source;
-}
-
-export function formatIncidentDate(iso: string, locale: Locale): string {
+export function formatShortDate(iso: string, locale: Locale): string {
   if (!iso) return "";
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString(locale === "zh" ? "zh-CN" : "en-US", {
-      month: locale === "zh" ? "numeric" : "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return locale === "zh" ? `${mm}/${dd} ${hh}:${min}` : `${mm}/${dd} ${hh}:${min}`;
   } catch {
     return "";
   }
@@ -286,7 +301,7 @@ export function formatTimeAgo(iso: string, now: number, locale: Locale): string 
   const s = Math.floor(diff / 1000);
   const dict = DICTIONARY[locale];
 
-  if (s < 30) return dict.justNow;
+  if (s < 15) return dict.justNow;
   if (s < 60) return dict.secondsAgo(s);
   if (s < 3600) return dict.minutesAgo(Math.floor(s / 60));
   return dict.daysAgo(Math.floor(s / 86400));

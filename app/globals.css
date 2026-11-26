@@ -1,63 +1,46 @@
 @import "tailwindcss";
 
 :root {
-  /* Architectural cool mineral palette */
-  --bg-canvas: #f2f4f7;
-  --bg-surface: #ffffff;
-  --bg-subtle: #e8edf3;
-  --bg-hover: #f7f9fc;
+  /* Tactile paper desk palette */
+  --paper-desk: #e8e8e4;
+  --paper-tile: #fcfbf9;
+  --paper-recessed: #f2f1ec;
+  --paper-track: #e6e5df;
+  --paper-hairline: rgba(20, 20, 18, 0.075);
+  --paper-border: rgba(20, 20, 18, 0.06);
 
-  --border-subtle: #dce2ec;
-  --border-strong: #bcc7d8;
+  /* Ink hierarchy */
+  --ink-primary: #141413;
+  --ink-secondary: #4e4e4a;
+  --ink-muted: #767670;
 
-  /* Ink hierarchy (all meet WCAG AA >= 4.5:1 on white and canvas) */
-  --text-primary: #0b1220;
-  --text-secondary: #344054;
-  --text-muted: #525f72;
-
-  /* Single deliberate UI accent */
-  --accent: #1d4ed8;
-  --accent-hover: #1e40af;
-  --accent-soft: #eff4ff;
+  /* Single signature ultramarine accent */
+  --ultramarine: #2b4bff;
+  --ultramarine-hover: #1d3be6;
+  --ultramarine-soft: rgba(43, 75, 255, 0.1);
 
   /* Semantic service health tokens */
-  --status-ok: #059669;
-  --status-ok-text: #047857;
-  --status-ok-tint: #ecfdf5;
+  --health-ok: #10b981;
+  --health-ok-text: #047857;
+  --health-degraded: #f59e0b;
+  --health-degraded-text: #b45309;
+  --health-partial: #f97316;
+  --health-partial-text: #c2410c;
+  --health-major: #ef4444;
+  --health-major-text: #b91c1c;
+  --health-maint: #2b4bff;
+  --health-maint-text: #1d3be6;
+  --health-unknown: #a1a19a;
+  --health-unknown-text: #575752;
 
-  --status-degraded: #d97706;
-  --status-degraded-text: #b45309;
-  --status-degraded-tint: #fffbeb;
-
-  --status-partial: #ea580c;
-  --status-partial-text: #c2410c;
-  --status-partial-tint: #fff7ed;
-
-  --status-major: #e11d48;
-  --status-major-text: #be123c;
-  --status-major-tint: #fff1f2;
-
-  --status-maint: #0284c7;
-  --status-maint-text: #0369a1;
-  --status-maint-tint: #f0f9ff;
-
-  --status-unknown: #64748b;
-  --status-unknown-text: #475569;
-  --status-unknown-tint: #f1f5f9;
-
-  /* Strict 3-size body scale */
-  --text-heading: 1.125rem; /* 18px */
-  --text-body: 0.9375rem; /* 15px */
-  --text-sm: 0.8125rem; /* 13px */
-
-  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Spring motion curve */
+  --ease-paper: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
-  --font-sans: var(--font-sans), "PingFang SC", "Hiragino Sans GB",
+  --font-sans: var(--font-geist-sans), "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: var(--font-display), var(--font-sans), "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
 html {
@@ -66,60 +49,161 @@ html {
 }
 
 body {
-  background-color: var(--bg-canvas);
-  color: var(--text-primary);
+  background-color: var(--paper-desk);
+  background-image: radial-gradient(
+      110% 75% at 50% 0%,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(232, 232, 228, 0) 68%
+    ),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  color: var(--ink-primary);
   font-family: var(--font-sans);
-  font-size: var(--text-body);
+  font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
 }
 
 ::selection {
-  background-color: var(--accent-soft);
-  color: var(--accent);
-}
-
-.font-display {
-  font-family: var(--font-display);
+  background-color: var(--ultramarine-soft);
+  color: var(--ultramarine);
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Explicit motion curves */
-.ui-transition-colors {
+/* Signature warm paper-white tactile tile */
+.paper-tile {
+  background-color: var(--paper-tile);
+  border-radius: 24px;
+  border: 1px solid var(--paper-border);
+  box-shadow:
+    0 1px 2px rgba(18, 18, 15, 0.04),
+    0 12px 28px -14px rgba(18, 18, 15, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  transition-property: transform, box-shadow, border-color, background-color;
+  transition-duration: 220ms;
+  transition-timing-function: var(--ease-paper);
+}
+
+.paper-tile-interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(20, 20, 18, 0.11);
+  box-shadow:
+    0 2px 5px rgba(18, 18, 15, 0.05),
+    0 18px 34px -14px rgba(18, 18, 15, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+/* Signature obsidian live-focus tile with ultramarine ambient glow */
+.paper-tile-obsidian {
+  background:
+    radial-gradient(
+      circle at 82% 88%,
+      rgba(43, 75, 255, 0.44) 0%,
+      rgba(43, 75, 255, 0.14) 36%,
+      rgba(13, 15, 21, 0) 68%
+    ),
+    radial-gradient(
+      circle at 14% 12%,
+      rgba(255, 255, 255, 0.06) 0%,
+      rgba(13, 15, 21, 0) 48%
+    ),
+    #0e1016;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 2px 6px rgba(10, 12, 20, 0.18),
+    0 18px 36px -14px rgba(10, 12, 20, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition-property: transform, box-shadow, background-color, border-color, color;
+  transition-duration: 260ms;
+  transition-timing-function: var(--ease-paper);
+}
+
+/* Tactile recessed pill surface */
+.paper-pill-track {
+  background-color: rgba(20, 20, 18, 0.055);
+  box-shadow: inset 0 1px 2px rgba(20, 20, 18, 0.05);
+}
+
+.paper-pill-active {
+  background-color: var(--paper-tile);
+  box-shadow:
+    0 1px 2px rgba(18, 18, 15, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Explicit transitions */
+.ui-colors {
   transition-property: color, background-color, border-color;
   transition-duration: 180ms;
-  transition-timing-function: var(--ease-out-quart);
+  transition-timing-function: var(--ease-paper);
 }
 
-.ui-transition-transform {
+.ui-transform {
   transition-property: transform, opacity;
-  transition-duration: 180ms;
-  transition-timing-function: var(--ease-out-quart);
-}
-
-.ui-transition-header {
-  transition-property: background-color, border-color, box-shadow;
   transition-duration: 200ms;
-  transition-timing-function: var(--ease-out-quart);
+  transition-timing-function: var(--ease-paper);
 }
 
-@keyframes cardHighlight {
+/* Staggered gentle rise-in (always finishes at opacity: 1) */
+@keyframes tileRise {
+  from {
+    opacity: 0.01;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tile-rise {
+  animation: tileRise 420ms var(--ease-paper) backwards;
+}
+
+/* Quiet micro-equalizer bars for active live sync */
+@keyframes eqBounce {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar-1 {
+  animation: eqBounce 1.1s ease-in-out infinite;
+}
+.eq-bar-2 {
+  animation: eqBounce 0.85s ease-in-out 0.2s infinite;
+}
+.eq-bar-3 {
+  animation: eqBounce 1.25s ease-in-out 0.35s infinite;
+}
+
+/* Highlight flash on quick-jump */
+@keyframes tileRingFlash {
   0% {
-    box-shadow: 0 0 0 2px var(--accent);
+    box-shadow:
+      0 0 0 2px var(--ultramarine),
+      0 14px 32px -12px rgba(43, 75, 255, 0.25);
   }
   100% {
-    box-shadow: 0 0 0 0 transparent;
+    box-shadow:
+      0 1px 2px rgba(18, 18, 15, 0.04),
+      0 12px 28px -14px rgba(18, 18, 15, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.92);
   }
 }
 
-.provider-flash {
-  animation: cardHighlight 1.1s var(--ease-out-quart) 1;
+.tile-flash {
+  animation: tileRingFlash 1.2s var(--ease-paper) 1;
 }
 
-/* Subtle architectural scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -128,11 +212,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: rgba(20, 20, 18, 0.18);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(20, 20, 18, 0.34);
 }
 
 @media (prefers-reduced-motion: reduce) {

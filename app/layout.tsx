@@ -1,23 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const geist = Geist({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-geist-sans",
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-display",
+  weight: ["400", "500"],
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
 export const viewport: Viewport = {
-  themeColor: "#f2f4f7",
+  themeColor: "#e8e8e4",
   colorScheme: "light",
 };
 
@@ -48,10 +48,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="zh-CN"
-      className={`${plusJakartaSans.variable} ${spaceGrotesk.variable}`}
-    >
+    <html lang="zh-CN" className={`${geist.variable} ${geistMono.variable}`}>
       <body className="min-h-screen antialiased">
         <main className="relative flex min-h-screen flex-col">{children}</main>
       </body>
